@@ -1,0 +1,30 @@
+route:
+  receiver: default
+  group_by: [alertname, instance]
+  group_wait: 30s
+  group_interval: 5m
+  repeat_interval: 4h
+
+receivers:
+  - name: default
+    # Por defecto las alertas solo se ven en la interfaz (http://localhost:9093).
+    # Para recibirlas en otro lado, descomenta y configura uno de estos:
+    #
+    # webhook_configs:
+    #   - url: "https://tu-servidor/webhook"
+    #
+    # slack_configs:
+    #   - api_url: "https://hooks.slack.com/services/XXX/YYY/ZZZ"
+    #     channel: "#alertas"
+    #     send_resolved: true
+    #
+    # telegram_configs:
+    #   - bot_token: "TOKEN_DEL_BOT"
+    #     chat_id: 123456789
+    #     send_resolved: true
+
+inhibit_rules:
+  # Si una instancia está caída, no avisar de sus otras alertas.
+  - source_matchers: [alertname="InstanciaCaida"]
+    target_matchers: [severity="warning"]
+    equal: [instance]

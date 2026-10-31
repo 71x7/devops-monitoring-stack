@@ -1,0 +1,49 @@
+groups:
+  - name: infraestructura
+    rules:
+      - alert: InstanciaCaida
+        expr: up == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "{{ $labels.job }} caído en {{ $labels.instance }}"
+          description: "El target lleva más de 2 minutos sin responder."
+
+      - alert: CPUAlta
+        expr: 100 - (avg by (instance) (rate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 85
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "CPU alta en {{ $labels.instance }}"
+          description: "Uso de CPU en {{ $value | printf \"%.0f\" }}% durante más de 10 minutos."
+
+      - alert: MemoriaAlta
+        expr: (1 - node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes) * 100 > 90
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Memoria alta en {{ $labels.instance }}"
+          description: "RAM en uso al {{ $value | printf \"%.0f\" }}%."
+
+      - alert: DiscoCasiLleno
+        expr: |
+          (1 - node_filesystem_avail_bytes{fstype!~"tmpfs|overlay|squashfs"}
+             / node_filesystem_size_bytes{fstype!~"tmpfs|overlay|squashfs"}) * 100 > 85
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Disco casi lleno en {{ $labels.instance }} ({{ $labels.mountpoint }})"
+          description: "Uso del {{ $value | printf \"%.0f\" }}%."
+
+      - alert: DiscoSeLlenaraEn24h
+        expr: predict_linear(node_filesystem_avail_bytes{fstype!~"tmpfs|overlay|squashfs"}[6h], 24 * 3600) < 0
+        for: 30m
+        labels:
+          severity: critical
+        annotations:
+          summary: "El disco {{ $labels.mountpoint }} en {{ $labels.instance }} se llenará en menos de 24h"
+          description: "Según la tendencia de las últimas 6 horas."
